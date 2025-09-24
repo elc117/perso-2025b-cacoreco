@@ -10,6 +10,8 @@ Para este trabalho, pretende-se desenvolver um serviço web que simule o funcion
 
 ## Desenvolvimento
 
+## Resultado
+
 ## Referências
 https://youtu.be/psTTKGj9G6Y?si=NrH5j3mBDvDwkVyy - Build a Haskell Server with Scotty framework
 
