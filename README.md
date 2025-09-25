@@ -15,4 +15,6 @@ Para este trabalho, pretende-se desenvolver um serviço web que simule o funcion
 ## Referências
 https://youtu.be/psTTKGj9G6Y?si=NrH5j3mBDvDwkVyy - Build a Haskell Server with Scotty framework
 
+https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Guides/Overview - Uma visão geral do HTTP
+
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/7NMOLXjY)
