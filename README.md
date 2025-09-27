@@ -15,7 +15,117 @@ Para este trabalho, pretende-se desenvolver um serviço web que simule o funcion
 Meu primeiro objetivo com a produção deste trabalho foi **compreender o básico do funcionamento de serviços e servidores Web**. Com pouco conhecimento sobre o assunto, esta se demonstrou uma primeira etapa importante para compreender o que está sendo produzido para esta atividade.  
 O código a ser construído utilizando o framework Scotty funcionaria como um servidor Web hospedado localmente na máquina onde o código está rodando; sendo assim, a única maneira de utilizar o serviço é na própria máquina onde atualmente o código está rodando. Serviços Web como este são usualmente armazenados em grandes computadores (servidores) que guardam todo o código que o compõe. Estes servidores estão conectados à internet e podem acessados através do seu nome de domínio (DNS). No caso do nosso pequeno serviço Scotty, este pode ser acessado através do endereço **localhost:3000**, usado para **aceder a uma aplicação ou serviço web que está a ser executado no nosso próprio computador**, através da porta 3000. ***localhost*** refere-se à **sua máquina**, e ***3000*** é o **número da porta** onde o servidor de desenvolvimento está a **escutar por conexões**. O serviço também necessita de um protocolo para possibilitar a obtenção de recursos do servidor Web. Nossa aplicação Scotty utiliza o **protocolo *HTTP*** para realizar esta **comunicação entre navegador e servidor**. Essa comunicação funciona através de uma **troca de mensagens**, onde o navegador envia *requests* e o servidor retorna *responses*
 
+
+
 ### Etapa 2: Construção 🔨
+
+Para iniciar o desenvolvimento do projeto, considerando o objetivo do trabalho, foi selecionado o código disponibilizado no material da aula que funciona como um banco de dados SQLite. Além disso, com base <a href="">neste vídeo</a>, foi criado um projeto utilizando Cabal, um sistema para construção de projetos na linguagem Haskell. Após o processo de criação, a pasta do projeto recebeu um novo arquivo .cabal e uma nova pasta "app" onde o código em Haskell principal está.
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+
+import Web.Scotty
+import Network.HTTP.Types.Status (status404, status500)
+import Network.Wai.Middleware.RequestLogger (logStdoutDev)
+import Database.SQLite.Simple
+import Database.SQLite.Simple.FromRow
+import Data.Aeson (FromJSON, ToJSON)
+import GHC.Generics (Generic)
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as T
+import Control.Monad.IO.Class (liftIO)
+import Network.Wai.Handler.Warp (HostPreference, defaultSettings, setHost, setPort)
+import System.Environment (lookupEnv)
+import Text.Read (readMaybe)
+
+
+-- Define the User data type
+data User = User
+  { userId   :: Maybe Int
+  , name     :: String
+  , email    :: String
+  } deriving (Show, Generic)
+
+instance ToJSON User
+instance FromJSON User
+
+instance FromRow User where
+  fromRow = User <$> field <*> field <*> field
+
+instance ToRow User where
+  toRow (User _ name_ email_) = toRow (name_, email_)
+
+hostAny :: HostPreference
+hostAny = "*"
+
+-- Initialize database
+initDB :: Connection -> IO ()
+initDB conn = execute_ conn
+  "CREATE TABLE IF NOT EXISTS users (\
+  \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
+  \ name TEXT,\ 
+  \ email TEXT)"
+
+-- Main entry point
+main :: IO ()
+main = do
+
+  conn <- open "users.db"
+  initDB conn
+
+  -- pick port: env PORT (Codespaces/Render/Heroku) or default 3000
+  mPort <- lookupEnv "PORT"
+  let port = maybe 3000 id (mPort >>= readMaybe)
+
+  putStrLn $ "Server running on port:" ++ show port
+  let opts = Options
+        { verbose  = 1
+        , settings = setHost hostAny $ setPort port defaultSettings
+        }
+
+  scottyOpts opts $ do
+    middleware logStdoutDev
+    
+    -- GET /healthz (check if the server is running)
+    get "/healthz" $ text "ok"  
+
+    -- GET /users
+    get "/users" $ do
+      users <- liftIO $ query_ conn "SELECT id, name, email FROM users" :: ActionM [User]
+      json users
+
+    -- GET /users/:id
+    get "/users/:id" $ do
+      idParam <- pathParam "id" :: ActionM Int
+      result  <- liftIO $ query conn "SELECT id, name, email FROM users WHERE id = ?" (Only idParam) :: ActionM [User]
+      if null result
+        then status status404 >> json ("User not found" :: String)
+        else json (head result)
+
+    -- POST /users
+    post "/users" $ do
+      user <- jsonData :: ActionM User
+      liftIO $ execute conn "INSERT INTO users (name, email) VALUES (?, ?)" (name user, email user)
+      rowId <- liftIO $ lastInsertRowId conn
+      json ("User created with id " ++ show rowId)
+
+    -- PUT /users/:id
+    put "/users/:id" $ do
+      idParam <- pathParam "id" :: ActionM Int
+      user <- jsonData :: ActionM User
+      let updatedUser = user { userId = Just idParam }
+      liftIO $ execute conn "UPDATE users SET name = ?, email = ? WHERE id = ?" (name updatedUser, email updatedUser, userId updatedUser)
+      json ("User updated" :: String)
+
+    -- DELETE /users/:id
+    delete "/users/:id" $ do
+      idParam <- pathParam "id" :: ActionM Int
+      liftIO $ execute conn "DELETE FROM users WHERE id = ?" (Only idParam)
+      json ("User deleted" :: String)
+```
+
+Considerando que o código possui bastante conteúdo, se demonstra necessário dividi-lo em partes menores, entender o funcionamento geral, e adicionar e remover funções conforme necessário para construção do serviço desejado. 
 
 Durante a pesquisa, foi explicitado para mim no seguinte <a href="https://www.stackbuilders.com/insights/getting-started-with-haskell-projects-using-scotty/">tutorial</a> como é possível utilizar ferramentas em HTML para criar um front-end para a aplicação. Considerando minha experiência e interesse por criar páginas web com HTML e CSS, a opção de utilizar um front-end construído com essas duas linguagens pareceu extremamente viável. 
 
