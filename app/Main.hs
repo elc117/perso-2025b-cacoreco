@@ -21,16 +21,17 @@ data Item = Item
   { itemID   :: Maybe Int
   , name     :: String
   , category    :: String
+  , price   :: Int
   } deriving (Show, Generic)
 
 instance ToJSON Item
 instance FromJSON Item
 
 instance FromRow Item where
-  fromRow = Item <$> field <*> field <*> field
+  fromRow = Item <$> field <*> field <*> field <*> field
 
 instance ToRow Item where
-  toRow (Item _ name_ category_) = toRow (name_, category_)
+  toRow (Item _ name_ category_ price_) = toRow (name_, category_, price_)
 
 hostAny :: HostPreference
 hostAny = "*"
@@ -38,16 +39,17 @@ hostAny = "*"
 -- Initialize database
 initDB :: Connection -> IO ()
 initDB conn = execute_ conn
-  "CREATE TABLE IF NOT EXISTS users (\
+  "CREATE TABLE IF NOT EXISTS items (\
   \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
   \ name TEXT,\ 
-  \ email TEXT)"
+  \ category TEXT,\
+  \ price INTEGER)"
 
 -- Main entry point
 main :: IO ()
 main = do
 
-  conn <- open "users.db"
+  conn <- open "items.db"
   initDB conn
 
   -- pick port: env PORT (Codespaces/Render/Heroku) or default 3000
@@ -67,35 +69,35 @@ main = do
     get "/healthz" $ text "ok"  
 
     -- GET /users
-    get "/users" $ do
-      users <- liftIO $ query_ conn "SELECT id, name, email FROM users" :: ActionM [Item]
-      json users
+    get "/items" $ do
+      items <- liftIO $ query_ conn "SELECT id, name, category, price FROM items" :: ActionM [Item]
+      json items
 
     -- GET /users/:id
-    get "/users/:id" $ do
+    get "/items/:id" $ do
       idParam <- pathParam "id" :: ActionM Int
-      result  <- liftIO $ query conn "SELECT id, name, email FROM users WHERE id = ?" (Only idParam) :: ActionM [Item]
+      result  <- liftIO $ query conn "SELECT id, name, category, price FROM items WHERE id = ?" (Only idParam) :: ActionM [Item]
       if null result
         then status status404 >> json ("Item not found" :: String)
         else json (head result)
 
-    -- POST /users
-    post "/users" $ do
-      user <- jsonData :: ActionM Item
-      liftIO $ execute conn "INSERT INTO users (name, email) VALUES (?, ?)" (name user, category user)
+    -- POST /items
+    post "/items" $ do
+      item <- jsonData :: ActionM Item
+      liftIO $ execute conn "INSERT INTO items (name, category, price) VALUES (?, ?, ?)" (name item, category item, price item)
       rowId <- liftIO $ lastInsertRowId conn
       json ("Item created with id " ++ show rowId)
 
-    -- PUT /users/:id
-    put "/users/:id" $ do
+    -- PUT /items/:id
+    put "/items/:id" $ do
       idParam <- pathParam "id" :: ActionM Int
-      user <- jsonData :: ActionM Item
-      let updatedUser = user { itemID = Just idParam }
-      liftIO $ execute conn "UPDATE users SET name = ?, email = ? WHERE id = ?" (name updatedUser, category updatedUser, itemID updatedUser)
+      item <- jsonData :: ActionM Item
+      let updatedItem = item { itemID = Just idParam }
+      liftIO $ execute conn "UPDATE items SET name = ?, category = ?, price = ?, WHERE id = ?" (name updatedItem, category updatedItem, itemID updatedItem)
       json ("Item updated" :: String)
 
-    -- DELETE /users/:id
-    delete "/users/:id" $ do
+    -- DELETE /items/:id
+    delete "/items/:id" $ do
       idParam <- pathParam "id" :: ActionM Int
-      liftIO $ execute conn "DELETE FROM users WHERE id = ?" (Only idParam)
+      liftIO $ execute conn "DELETE FROM items WHERE id = ?" (Only idParam)
       json ("Item deleted" :: String)

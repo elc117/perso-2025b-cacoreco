@@ -125,7 +125,41 @@ main = do
       json ("User deleted" :: String)
 ```
 
-Considerando que o código possui bastante conteúdo, se demonstra necessário dividi-lo em partes menores, entender o funcionamento geral, e adicionar e remover funções conforme necessário para construção do serviço desejado. 
+Considerando que o código possui bastante conteúdo, se demonstra necessário dividi-lo em partes menores, entender o funcionamento geral, e adicionar e remover funções conforme necessário para construção do serviço desejado.  
+
+Primeiramente, fiz algumas alterações básicas nos dados utilizados pelo sistema. Pretende-se que cada elemento seja um item, com nome, categoria e preço. Então, o tipo de dado "User" foi alterado para "Item", e o campo "email" foi alterado para "category" (categoria). Também foi adicionado um novo campo "preço". Este último campo adicionado exige algumas outras alterações no código para garantir que tudo funcione corretamente.
+
+```haskell
+-- Define the Item data type
+data Item = Item
+  { itemID   :: Maybe Int
+  , name     :: String
+  , category    :: String
+  , price :: Int
+  } deriving (Show, Generic)
+```
+
+Para acomodar o campo "price", várias alterações necessitaram ser realizadas no código. por exemplo:
+
+```haskell
+instance ToRow Item where
+  toRow (Item _ name_ category_ price_) = toRow (name_, category_, price_)
+```
+
+Esta função ensina a biblioteca a converter um Item em valores que podem ser usados em um pedido de INSERT ou UPDATE. Quando adicionei o campo "price" ao tipo de dado Item, o compilador me alertou que o construtor toRow exigia que o novo campo fosse adicionado à sua função.
+
+```haskell
+-- Initialize database
+initDB :: Connection -> IO ()
+initDB conn = execute_ conn
+  "CREATE TABLE IF NOT EXISTS items (\
+  \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
+  \ name TEXT,\ 
+  \ category TEXT,\
+  \ price INTEGER)"
+```
+
+Para inicializar o database dos itens, também foi importante definir o campo price, especificando que este deve ser um número inteiro. Diversas outras alterações similiares foram realizadas no código, indicando às funções que existe um novo campo para cada Item. 
 
 Durante a pesquisa, foi explicitado para mim no seguinte <a href="https://www.stackbuilders.com/insights/getting-started-with-haskell-projects-using-scotty/">tutorial</a> como é possível utilizar ferramentas em HTML para criar um front-end para a aplicação. Considerando minha experiência e interesse por criar páginas web com HTML e CSS, a opção de utilizar um front-end construído com essas duas linguagens pareceu extremamente viável. 
 
