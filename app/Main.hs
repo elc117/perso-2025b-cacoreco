@@ -81,6 +81,12 @@ main = do
         then status status404 >> json ("Item not found" :: String)
         else json (head result)
 
+    -- GET /items/category/:category
+    get "/items/category/:category" $ do
+      categoryParam <- pathParam "category" :: ActionM String
+      items <- liftIO $ query conn "SELECT id, name, category, price FROM items WHERE category = ?" (Only categoryParam) :: ActionM [Item]
+      json items
+
     -- POST /items
     post "/items" $ do
       item <- jsonData :: ActionM Item

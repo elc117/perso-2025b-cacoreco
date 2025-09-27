@@ -12,14 +12,32 @@ Para este trabalho, pretende-se desenvolver um serviço web que simule o funcion
 
 ### Etapa 1: Entendendo servidores Web 🛜
 
-Meu primeiro objetivo com a produção deste trabalho foi **compreender o básico do funcionamento de serviços e servidores Web**. Com pouco conhecimento sobre o assunto, esta se demonstrou uma primeira etapa importante para compreender o que está sendo produzido para esta atividade.  
+Meu primeiro objetivo com a produção deste trabalho foi **compreender o básico do funcionamento de serviços e servidores Web**. Com pouco conhecimento sobre o assunto, esta se demonstrou uma primeira etapa importante para compreender o que está sendo produzido para esta atividade.
+
 O código a ser construído utilizando o framework Scotty funcionaria como um servidor Web hospedado localmente na máquina onde o código está rodando; sendo assim, a única maneira de utilizar o serviço é na própria máquina onde atualmente o código está rodando. Serviços Web como este são usualmente armazenados em grandes computadores (servidores) que guardam todo o código que o compõe. Estes servidores estão conectados à internet e podem acessados através do seu nome de domínio (DNS). No caso do nosso pequeno serviço Scotty, este pode ser acessado através do endereço **localhost:3000**, usado para **aceder a uma aplicação ou serviço web que está a ser executado no nosso próprio computador**, através da porta 3000. ***localhost*** refere-se à **sua máquina**, e ***3000*** é o **número da porta** onde o servidor de desenvolvimento está a **escutar por conexões**. O serviço também necessita de um protocolo para possibilitar a obtenção de recursos do servidor Web. Nossa aplicação Scotty utiliza o **protocolo *HTTP*** para realizar esta **comunicação entre navegador e servidor**. Essa comunicação funciona através de uma **troca de mensagens**, onde o navegador envia *requests* e o servidor retorna *responses*
 
+Aqui será feita uma análise de seções de código comum para todas as aplicações do framework Scotty. Estes trechos exploram o funcionamento do servidor, demonstrando requisições e a comunicação através da porta 3000. 
 
+```haskell
+  -- pick port: env PORT (Codespaces/Render/Heroku) or default 3000
+  mPort <- lookupEnv "PORT"
+  let port = maybe 3000 id (mPort >>= readMaybe)
+```
+
+Nesse trecho de código, o programa configura a porta do servidor, verificando se a variável de ambiente "PORT" está definida. Caso contrário, utiliza a porta padrão 3000.
+
+```haskell
+    -- GET /users
+    get "/items" $ do
+      items <- liftIO $ query_ conn "SELECT id, name, category, price FROM items" :: ActionM [Item]
+      json items
+```
+
+Esta seção de código explora o funcionamento de uma requisição do tipo GET pela rota /items. 
 
 ### Etapa 2: Construção 🔨
 
-Para iniciar o desenvolvimento do projeto, considerando o objetivo do trabalho, foi selecionado o código disponibilizado no material da aula que funciona como um banco de dados SQLite. Além disso, com base <a href="">neste vídeo</a>, foi criado um projeto utilizando Cabal, um sistema para construção de projetos na linguagem Haskell. Após o processo de criação, a pasta do projeto recebeu um novo arquivo .cabal e uma nova pasta "app" onde o código em Haskell principal está.
+Para iniciar o desenvolvimento do projeto, considerando o objetivo principal do trabalho, foi selecionado o código disponibilizado no material da aula que funciona como um banco de dados SQLite. Além disso, com base <a href="">neste vídeo</a>, foi criado um projeto utilizando Cabal, um sistema para construção de projetos na linguagem Haskell. Após o processo de criação, a pasta do projeto recebeu um novo arquivo .cabal e uma nova pasta "app" onde o código em Haskell principal está.
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -125,7 +143,7 @@ main = do
       json ("User deleted" :: String)
 ```
 
-Considerando que o código possui bastante conteúdo, se demonstra necessário dividi-lo em partes menores, entender o funcionamento geral, e adicionar e remover funções conforme necessário para construção do serviço desejado.  
+Levando em consideração que o código possui bastante conteúdo, se demonstra necessário dividi-lo em partes menores, entender o funcionamento geral, e adicionar e remover funções conforme necessário para construção do serviço desejado.  
 
 Primeiramente, fiz algumas alterações básicas nos dados utilizados pelo sistema. Pretende-se que cada elemento seja um item, com nome, categoria e preço. Então, o tipo de dado "User" foi alterado para "Item", e o campo "email" foi alterado para "category" (categoria). Também foi adicionado um novo campo "preço". Este último campo adicionado exige algumas outras alterações no código para garantir que tudo funcione corretamente.
 
@@ -159,7 +177,8 @@ initDB conn = execute_ conn
   \ price INTEGER)"
 ```
 
-Para inicializar o database dos itens, também foi importante definir o campo price, especificando que este deve ser um número inteiro. Diversas outras alterações similiares foram realizadas no código, indicando às funções que existe um novo campo para cada Item. 
+Para inicializar o database dos itens, também foi importante definir o campo price, especificando que este deve ser um número inteiro. Diversas outras alterações similiares foram realizadas no código, indicando às funções que existe um novo campo para cada Item.  
+A próxima etapa na construção do código é implementar as funções para filtrar itens (por categoria, preço, ou ambos) e para calcular quais itens podem ser adquiridos com uma quantidade específica de dinheiro informada pelo usuário. Para isto, é preciso entender como as requisições funcionam dentro do Scotty.
 
 Durante a pesquisa, foi explicitado para mim no seguinte <a href="https://www.stackbuilders.com/insights/getting-started-with-haskell-projects-using-scotty/">tutorial</a> como é possível utilizar ferramentas em HTML para criar um front-end para a aplicação. Considerando minha experiência e interesse por criar páginas web com HTML e CSS, a opção de utilizar um front-end construído com essas duas linguagens pareceu extremamente viável. 
 
