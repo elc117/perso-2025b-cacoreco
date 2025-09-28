@@ -395,6 +395,8 @@ Lembre-se de substituir nomes após `:` como em `/:category` pelo nome correspon
 
 A execucação do projeto final ficou assim:
 
+https://github.com/user-attachments/assets/a40dd73c-e5b6-43e5-87a4-41fc5a03461e
+
 ## Referências 📚
 https://youtu.be/psTTKGj9G6Y?si=NrH5j3mBDvDwkVyy - Build a Haskell Server with Scotty framework
 
