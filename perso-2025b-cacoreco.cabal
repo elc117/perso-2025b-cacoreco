@@ -79,4 +79,4 @@ executable perso-2025b-cacoreco
 
     -- Dependencies
     build-depends: 
-      base >= 4.7 && <5, scotty , blaze-html, http-types , wai-extra , wai-app-static , sqlite-simple , aeson , text , warp
+      base >= 4.7 && <5, scotty , http-types , wai-extra , wai-app-static , sqlite-simple , aeson , text , warp
